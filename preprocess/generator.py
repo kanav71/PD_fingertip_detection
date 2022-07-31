@@ -9,7 +9,7 @@ from preprocess.augmentation import rotation, translate, crop, flip_horizontal, 
 
 # change the directories here when running on server/cloud - Kanav
 train_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Train/' 
-valid_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Test/'
+valid_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Valid/'
 label_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/label/'
 
 
@@ -22,6 +22,7 @@ def train_generator(sample_per_batch, batch_number):
     print('Training Dataset Size: ' + str(len(train_image_file)))
 
     labels_data = pd.read_csv(label_directory + "combined_labels_v3_cleaned.csv")
+    labels_data["filename"] = labels_data["video_name"] + "@" + labels_data.seq.str[3:6].astype(int).astype(str)
     
     for i in range(0, 10):
         random.seed(4)
@@ -38,20 +39,44 @@ def train_generator(sample_per_batch, batch_number):
                 
                 # image: ndarray keypoints: ndarray but not normalized
                 image = cv2.imread(train_directory + image_name)
-                image = cv2.resize(image, (128, 128))
+                
+                ## Resizing the image to a square dimension - Kanav
+                old_size = image.shape[:2]
+                desired_size = max(old_size)
+                ratio = float(desired_size)/max(old_size)
+                new_size = tuple([int(x*ratio) for x in old_size])
+                new_size
+                delta_w = desired_size - new_size[1]
+                delta_h = desired_size - new_size[0]
+                top, bottom = delta_h//2, delta_h-(delta_h//2)
+                left, right = delta_w//2, delta_w-(delta_w//2)
 
+                color = [0,0,0]
+                image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT,
+                    value=color)
+                
+                #resizing image as per model requirements - change this when you try some other size - Kanav        
+                image = cv2.resize(image, (128, 128), interpolation=cv2.INTER_LINEAR)
+                
                 # Initialize frame counter - kanav - may not be needed now
                 #cnt = 0 
-                filename = image_name.split("@")[0]
-                file_index = int(image_name.split("@")[1].split(".")[0])
+                filename = image_name.split(".jpg")[0]
+                #file_index = int(image_name.split("@")[1].split(".")[0])
+                #temp_labels = labels_data[labels_data["filename"] == filename]
 
-                temp_labels = labels_data[labels_data["video_name"] == filename]
                 keypoints = []
-
-                x1 = int(temp_labels.iloc[file_index,2]*128/780)
-                y1 = int(temp_labels.iloc[file_index,3]*128/910)
-                x2 = int(temp_labels.iloc[file_index,4]*128/780)
-                y2 = int(temp_labels.iloc[file_index,5]*128/910)
+                
+                #adjusting the width labels as per new image dimensions of a square
+                x1 = (labels_data[labels_data["filename"] == filename]["new_finger_x"]) + left
+                y1 = (labels_data[labels_data["filename"] == filename]["new_finger_y"]) + top
+                x2 = (labels_data[labels_data["filename"] == filename]["new_thumb_x"]) + left
+                y2 = (labels_data[labels_data["filename"] == filename]["new_thumb_y"]) + top
+                
+                #adjusting labels as per dimension of reduced size for model
+                x1 = (x1*128/(max(old_size)) )
+                y1 = (y1*128/(max(old_size)) )
+                x2 = (x2*128/(max(old_size)) )
+                y2 = (y2*128/(max(old_size)) )
 
                 keypoints.append(x1)
                 keypoints.append(y1)
@@ -200,7 +225,7 @@ def train_generator(sample_per_batch, batch_number):
 
             y_batch_key = np.asarray(y_batch_key)
             y_batch_key = y_batch_key.astype('float32')
-            #y_batch_key = y_batch_key / 128.
+            y_batch_key = y_batch_key / 128.
             yield (x_batch, y_batch_key)
 
 
@@ -209,7 +234,8 @@ def valid_generator(sample_per_batch, batch_number):
 
     valid_image_files = os.listdir(valid_directory)
     labels_data = pd.read_csv(label_directory + "combined_labels_v3_cleaned.csv")
-
+    labels_data["filename"] = labels_data["video_name"] + "@" + labels_data.seq.str[3:6].astype(int).astype(str)
+    
     for i in range(0, 10):
         random.shuffle(valid_image_files)
 
@@ -222,22 +248,45 @@ def valid_generator(sample_per_batch, batch_number):
             for n in range(start, end):
                 image_name = valid_image_files[n]
                 
-                # image: ndarray keypoints: ndarray but not normalized
+               # image: ndarray keypoints: ndarray but not normalized
                 image = cv2.imread(valid_directory + image_name)
-                image = cv2.resize(image, (128, 128))
+                
+               ## Resizing the image to a square dimension - Kanav
+                old_size = image.shape[:2]
+                desired_size = max(old_size)
+                ratio = float(desired_size)/max(old_size)
+                new_size = tuple([int(x*ratio) for x in old_size])
+                new_size
+                delta_w = desired_size - new_size[1]
+                delta_h = desired_size - new_size[0]
+                top, bottom = delta_h//2, delta_h-(delta_h//2)
+                left, right = delta_w//2, delta_w-(delta_w//2)
 
+                color = [0,0,0]
+                image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT,
+                    value=color)
+                
+                #resizing image as per model requirements - change this when you try some other size - Kanav        
+                image = cv2.resize(image, (128, 128), interpolation=cv2.INTER_LINEAR)
+                
                 # Initialize frame counter - kanav - may not be needed now
                 #cnt = 0 
-                filename = image_name.split("@")[0]
-                file_index = int(image_name.split("@")[1].split(".")[0])
-
-                temp_labels = labels_data[labels_data["video_name"] == filename]
+                filename = image_name.split(".jpg")[0]
+                #file_index = int(image_name.split("@")[1].split(".")[0])
+                #temp_labels = labels_data[labels_data["filename"] == filename]
                 keypoints = []
-
-                x1 = int(temp_labels.iloc[file_index,2]*128/780)
-                y1 = int(temp_labels.iloc[file_index,3]*128/910)
-                x2 = int(temp_labels.iloc[file_index,4]*128/780)
-                y2 = int(temp_labels.iloc[file_index,5]*128/910)
+                
+                #adjusting the width labels as per new image dimensions of a square
+                x1 = (labels_data[labels_data["filename"] == filename]["new_finger_x"]) + left
+                y1 = (labels_data[labels_data["filename"] == filename]["new_finger_y"]) + top
+                x2 = (labels_data[labels_data["filename"] == filename]["new_thumb_x"]) + left
+                y2 = (labels_data[labels_data["filename"] == filename]["new_thumb_y"]) + top
+                
+                #adjusting labels as per dimension of reduced size for model
+                x1 = (x1*128/(max(old_size)) )
+                y1 = (y1*128/(max(old_size)) )
+                x2 = (x2*128/(max(old_size)) )
+                y2 = (y2*128/(max(old_size)) )
 
                 keypoints.append(x1)
                 keypoints.append(y1)
@@ -253,17 +302,17 @@ def valid_generator(sample_per_batch, batch_number):
 
             x_batch = np.asarray(x_batch)
             x_batch = x_batch.astype('float32')
-          #  x_batch = x_batch / 255.
+            x_batch = x_batch / 255.
 
             y_batch_key = np.asarray(y_batch_key)
             y_batch_key = y_batch_key.astype('float32')
-           # y_batch_key = y_batch_key / 128.
+            y_batch_key = y_batch_key / 128.
             yield (x_batch, y_batch_key)
 
 
 if __name__ == '__main__':
     train_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Train/' 
-    valid_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Test/'
+    valid_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Valid/'
     label_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/label/'
 
     gen = train_generator(sample_per_batch=3, batch_number=2)

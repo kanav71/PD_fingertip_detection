@@ -26,11 +26,11 @@ model.compile(optimizer=adam, loss=loss_function)
 
 # train
 epochs = 2 # kanav changed from 10 to 2
-train_gen = train_generator(sample_per_batch=1, batch_number=50) # kanav changed from 1690 to 5, sample_per_batch to 1
+train_gen = train_generator(sample_per_batch=1, batch_number=8232) # kanav changed from 1690 to 5, sample_per_batch to 1
 val_gen = valid_generator(sample_per_batch=3, batch_number=2) # kanav changed sample_per_batch from 50 to 3 & batch number from 10 to 2 
 
 checkpoints = ModelCheckpoint('weights/weights{epoch:03d}.h5', save_weights_only=True, period=1)
-history = model.fit_generator(train_gen, steps_per_epoch=50, epochs=epochs, verbose=1, shuffle=True,  # kanav changed from 1690 to 3
+history = model.fit_generator(train_gen, steps_per_epoch=8232, epochs=epochs, verbose=1, shuffle=True,  # kanav changed from 1690 to 3
                               validation_data=val_gen, validation_steps=2, #changed from 10 to 2 - nto sure of original though
                               callbacks=[checkpoints], max_queue_size=100)
 

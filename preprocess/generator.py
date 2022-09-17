@@ -24,7 +24,7 @@ def train_generator(sample_per_batch, batch_number):
 
     labels_data = pd.read_csv(label_directory + "combined_labels_v3_cleaned.csv")
     labels_data["filename"] = labels_data["video_name"] + "@" + labels_data.seq.str[3:6].astype(int).astype(str)
-    
+
     for i in range(0, 10):
         random.seed(4)
         random.shuffle(train_image_file)
@@ -37,10 +37,10 @@ def train_generator(sample_per_batch, batch_number):
             y_batch_key = []
             for n in range(start, end):
                 image_name = train_image_file[n]
-                
+
                 # image: ndarray keypoints: ndarray but not normalized
                 image = cv2.imread(train_directory + image_name)
-                
+
                 ## Resizing the image to a square dimension - Kanav
                 old_size = image.shape[:2]
                 desired_size = max(old_size)
@@ -55,50 +55,40 @@ def train_generator(sample_per_batch, batch_number):
                 color = [0,0,0]
                 image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT,
                     value=color)
-                
-                #resizing image as per model requirements - change this when you try some other size - Kanav        
+
+                #resizing image as per model requirements - change this when you try some other size - Kanav
                 image = cv2.resize(image, (128, 128), interpolation=cv2.INTER_LINEAR)
-                
+
                 # Initialize frame counter - kanav - may not be needed now
-                #cnt = 0 
+                #cnt = 0
                 filename = image_name.split(".jpg")[0]
                 #file_index = int(image_name.split("@")[1].split(".")[0])
                 #temp_labels = labels_data[labels_data["filename"] == filename]
 
                 keypoints = []
-                
+
                 #adjusting the width labels as per new image dimensions of a square
-                x1 = (labels_data[labels_data["filename"] == filename]["new_finger_x"]).values[0] + left
-                y1 = (labels_data[labels_data["filename"] == filename]["new_finger_y"]).values[0] + top
-                x2 = (labels_data[labels_data["filename"] == filename]["new_thumb_x"]).values[0] + left
-                y2 = (labels_data[labels_data["filename"] == filename]["new_thumb_y"]).values[0] + top
-                
+                x1 = (labels_data[labels_data["filename"] == filename]["new_finger_x"]) + left
+                y1 = (labels_data[labels_data["filename"] == filename]["new_finger_y"]) + top
+                x2 = (labels_data[labels_data["filename"] == filename]["new_thumb_x"]) + left
+                y2 = (labels_data[labels_data["filename"] == filename]["new_thumb_y"]) + top
+
                 #adjusting labels as per dimension of reduced size for model
-                x1 = np.float32(x1*128/(max(old_size)) )
-                y1 = np.float32(y1*128/(max(old_size)) )
-                x2 = np.float32(x2*128/(max(old_size)) )
-                y2 = np.float32(y2*128/(max(old_size)) )
-                #print(x1,y1,x2,y2)
+                x1 = int(x1*128/(max(old_size)) )
+                y1 = int(y1*128/(max(old_size)) )
+                x2 = int(x2*128/(max(old_size)) )
+                y2 = int(y2*128/(max(old_size)) )
+
                 keypoints.append(x1)
                 keypoints.append(y1)
                 keypoints.append(x2)
                 keypoints.append(y2)
 
-                    
-#                 if 'TI1K' in image_name.split('_'):
-#                     image, keypoints = my_label_gen(image_directory=train_directory,
-#                                                     label_directory=label_directory,
-#                                                     image_name=image_name)
-#                 else:
-#                     image, keypoints = label_generator(image_directory=train_directory,
-#                                                        label_directory=label_directory,
-#                                                        image_name=image_name)
-
                 # 1.0 Original Image
                 x_batch.append(image)
                 y_batch_key.append(keypoints)
                 # visualize(image, keypoints)
-                
+
                 """ Augmentation """
                 # 2.0 Flip
                 im_flip, k_flip = flip_horizontal(image, keypoints)
@@ -130,17 +120,17 @@ def train_generator(sample_per_batch, batch_number):
                 y_batch_key.append(k)
                 # visualize(im, k)
 
-                # # 7.0 Original + crop
-                # im, k = crop(image, keypoints)
-                # x_batch.append(im)
-                # y_batch_key.append(k)
-                # # visualize(im, k)
+                # 7.0 Original + crop
+                #im, k = crop(image, keypoints)
+                #x_batch.append(im)
+                #y_batch_key.append(k)
+                # visualize(im, k)
 
-                # # 8.0 Flip + crop
-                # im, k = crop(im_flip, k_flip)
-                # x_batch.append(im)
-                # y_batch_key.append(k)
-                # # visualize(im, k)
+                # 8.0 Flip + crop
+                #im, k = crop(im_flip, k_flip)
+                #x_batch.append(im)
+                #y_batch_key.append(k)
+                # visualize(im, k)
 
                 # 9.0 Original + noise
                 im, k = noise(image, keypoints)
@@ -166,17 +156,17 @@ def train_generator(sample_per_batch, batch_number):
                 y_batch_key.append(k)
                 # visualize(im, k)
 
-                # # 13.0 Original + flip vertical
-                # im, k = flip_vertical(image, keypoints)
-                # x_batch.append(im)
-                # y_batch_key.append(k)
-                # # visualize(im, k)
+                # 13.0 Original + flip vertical
+                #im, k = flip_vertical(image, keypoints)
+                #x_batch.append(im)
+                #y_batch_key.append(k)
+                # visualize(im, k)
 
-                # # 14.0 Flip + flip vertical
-                # im, k = flip_vertical(im_flip, k_flip)
-                # x_batch.append(im)
-                # y_batch_key.append(k)
-                # # visualize(im, k)
+                # 14.0 Flip + flip vertical
+                #im, k = flip_vertical(im_flip, k_flip)
+                #x_batch.append(im)
+                #y_batch_key.append(k)
+                # visualize(im, k)
 
                 # 15.0 Original + rotate + translate
                 im, k = rotation(image, keypoints)
@@ -206,19 +196,19 @@ def train_generator(sample_per_batch, batch_number):
                 y_batch_key.append(k)
                 # visualize(im, k)
 
-                # # 19.0 Original + crop + translate
-                # im, k = crop(image, keypoints)
-                # im, k = translate(im, k)
-                # x_batch.append(im)
-                # y_batch_key.append(k)
-                # # visualize(im, k)
+                # 19.0 Original + crop + translate
+                #im, k = crop(image, keypoints)
+                #im, k = translate(im, k)
+                #x_batch.append(im)
+                #y_batch_key.append(k)
+                # visualize(im, k)
 
-                # # 20.0 Flip + crop + translate
-                # im, k = crop(im_flip, k_flip)
-                # im, k = translate(im, k)
-                # x_batch.append(im)
-                # y_batch_key.append(k)
-                # # visualize(im, k)
+                # 20.0 Flip + crop + translate
+                #im, k = crop(im_flip, k_flip)
+                #im, k = translate(im, k)
+                #x_batch.append(im)
+                #y_batch_key.append(k)
+                # visualize(im, k)
 
             x_batch = np.asarray(x_batch)
             x_batch = x_batch.astype('float32')
@@ -236,7 +226,7 @@ def valid_generator(sample_per_batch, batch_number):
     valid_image_files = os.listdir(valid_directory)
     labels_data = pd.read_csv(label_directory + "combined_labels_v3_cleaned.csv")
     labels_data["filename"] = labels_data["video_name"] + "@" + labels_data.seq.str[3:6].astype(int).astype(str)
-    
+
     for i in range(0, 10):
         random.shuffle(valid_image_files)
 
@@ -248,10 +238,10 @@ def valid_generator(sample_per_batch, batch_number):
             y_batch_key = []
             for n in range(start, end):
                 image_name = valid_image_files[n]
-                
+
                # image: ndarray keypoints: ndarray but not normalized
                 image = cv2.imread(valid_directory + image_name)
-                
+
                ## Resizing the image to a square dimension - Kanav
                 old_size = image.shape[:2]
                 desired_size = max(old_size)
@@ -266,28 +256,28 @@ def valid_generator(sample_per_batch, batch_number):
                 color = [0,0,0]
                 image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT,
                     value=color)
-                
-                #resizing image as per model requirements - change this when you try some other size - Kanav        
+
+                #resizing image as per model requirements - change this when you try some other size - Kanav
                 image = cv2.resize(image, (128, 128), interpolation=cv2.INTER_LINEAR)
-                
+
                 # Initialize frame counter - kanav - may not be needed now
-                #cnt = 0 
+                #cnt = 0
                 filename = image_name.split(".jpg")[0]
                 #file_index = int(image_name.split("@")[1].split(".")[0])
                 #temp_labels = labels_data[labels_data["filename"] == filename]
                 keypoints = []
-                
+
                 #adjusting the width labels as per new image dimensions of a square
-                x1 = (labels_data[labels_data["filename"] == filename]["new_finger_x"]).values[0] + left
-                y1 = (labels_data[labels_data["filename"] == filename]["new_finger_y"]).values[0] + top
-                x2 = (labels_data[labels_data["filename"] == filename]["new_thumb_x"]).values[0] + left
-                y2 = (labels_data[labels_data["filename"] == filename]["new_thumb_y"]).values[0] + top
-                
+                x1 = (labels_data[labels_data["filename"] == filename]["new_finger_x"]) + left
+                y1 = (labels_data[labels_data["filename"] == filename]["new_finger_y"]) + top
+                x2 = (labels_data[labels_data["filename"] == filename]["new_thumb_x"]) + left
+                y2 = (labels_data[labels_data["filename"] == filename]["new_thumb_y"]) + top
+
                 #adjusting labels as per dimension of reduced size for model
-                x1 = np.float32(x1*128/(max(old_size)) )
-                y1 = np.float32(y1*128/(max(old_size)) )
-                x2 = np.float32(x2*128/(max(old_size)) )
-                y2 = np.float32(y2*128/(max(old_size)) )
+                x1 = int(x1*128/(max(old_size)) )
+                y1 = int (y1*128/(max(old_size)) )
+                x2 = int(x2*128/(max(old_size)) )
+                y2 = int(y2*128/(max(old_size)) )
 
                 keypoints.append(x1)
                 keypoints.append(y1)
@@ -297,10 +287,9 @@ def valid_generator(sample_per_batch, batch_number):
                 x_batch.append(image)
                 y_batch_key.append(keypoints)
 
-                ## Removing flipping as we have enough data
-                # im_flip, k_flip = flip_horizontal(image, keypoints)
-                # x_batch.append(im_flip)
-                # y_batch_key.append(k_flip)
+                im_flip, k_flip = flip_horizontal(image, keypoints)
+                x_batch.append(im_flip)
+                y_batch_key.append(k_flip)
 
             x_batch = np.asarray(x_batch)
             x_batch = x_batch.astype('float32')
@@ -310,7 +299,6 @@ def valid_generator(sample_per_batch, batch_number):
             y_batch_key = y_batch_key.astype('float32')
             y_batch_key = y_batch_key / 128.
             yield (x_batch, y_batch_key)
-
 
 
 

@@ -7,11 +7,12 @@ from visualize import visualize
 from preprocess.datagen import label_generator, my_label_gen
 from preprocess.augmentation import rotation, translate, crop, flip_horizontal, flip_vertical, noise, salt
 
+
+
 # change the directories here when running on server/cloud - Kanav
 train_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Train/' 
 valid_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Valid/'
 label_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/label/'
-
 
 def train_generator(sample_per_batch, batch_number):
     """ Generating training data """
@@ -67,17 +68,17 @@ def train_generator(sample_per_batch, batch_number):
                 keypoints = []
                 
                 #adjusting the width labels as per new image dimensions of a square
-                x1 = (labels_data[labels_data["filename"] == filename]["new_finger_x"]) + left
-                y1 = (labels_data[labels_data["filename"] == filename]["new_finger_y"]) + top
-                x2 = (labels_data[labels_data["filename"] == filename]["new_thumb_x"]) + left
-                y2 = (labels_data[labels_data["filename"] == filename]["new_thumb_y"]) + top
+                x1 = (labels_data[labels_data["filename"] == filename]["new_finger_x"]).values[0] + left
+                y1 = (labels_data[labels_data["filename"] == filename]["new_finger_y"]).values[0] + top
+                x2 = (labels_data[labels_data["filename"] == filename]["new_thumb_x"]).values[0] + left
+                y2 = (labels_data[labels_data["filename"] == filename]["new_thumb_y"]).values[0] + top
                 
                 #adjusting labels as per dimension of reduced size for model
-                x1 = (x1*128/(max(old_size)) )
-                y1 = (y1*128/(max(old_size)) )
-                x2 = (x2*128/(max(old_size)) )
-                y2 = (y2*128/(max(old_size)) )
-
+                x1 = np.float32(x1*128/(max(old_size)) )
+                y1 = np.float32(y1*128/(max(old_size)) )
+                x2 = np.float32(x2*128/(max(old_size)) )
+                y2 = np.float32(y2*128/(max(old_size)) )
+                #print(x1,y1,x2,y2)
                 keypoints.append(x1)
                 keypoints.append(y1)
                 keypoints.append(x2)
@@ -97,7 +98,7 @@ def train_generator(sample_per_batch, batch_number):
                 x_batch.append(image)
                 y_batch_key.append(keypoints)
                 # visualize(image, keypoints)
-
+                
                 """ Augmentation """
                 # 2.0 Flip
                 im_flip, k_flip = flip_horizontal(image, keypoints)
@@ -129,17 +130,17 @@ def train_generator(sample_per_batch, batch_number):
                 y_batch_key.append(k)
                 # visualize(im, k)
 
-                # 7.0 Original + crop
-                im, k = crop(image, keypoints)
-                x_batch.append(im)
-                y_batch_key.append(k)
-                # visualize(im, k)
+                # # 7.0 Original + crop
+                # im, k = crop(image, keypoints)
+                # x_batch.append(im)
+                # y_batch_key.append(k)
+                # # visualize(im, k)
 
-                # 8.0 Flip + crop
-                im, k = crop(im_flip, k_flip)
-                x_batch.append(im)
-                y_batch_key.append(k)
-                # visualize(im, k)
+                # # 8.0 Flip + crop
+                # im, k = crop(im_flip, k_flip)
+                # x_batch.append(im)
+                # y_batch_key.append(k)
+                # # visualize(im, k)
 
                 # 9.0 Original + noise
                 im, k = noise(image, keypoints)
@@ -165,17 +166,17 @@ def train_generator(sample_per_batch, batch_number):
                 y_batch_key.append(k)
                 # visualize(im, k)
 
-                # 13.0 Original + flip vertical
-                im, k = flip_vertical(image, keypoints)
-                x_batch.append(im)
-                y_batch_key.append(k)
-                # visualize(im, k)
+                # # 13.0 Original + flip vertical
+                # im, k = flip_vertical(image, keypoints)
+                # x_batch.append(im)
+                # y_batch_key.append(k)
+                # # visualize(im, k)
 
-                # 14.0 Flip + flip vertical
-                im, k = flip_vertical(im_flip, k_flip)
-                x_batch.append(im)
-                y_batch_key.append(k)
-                # visualize(im, k)
+                # # 14.0 Flip + flip vertical
+                # im, k = flip_vertical(im_flip, k_flip)
+                # x_batch.append(im)
+                # y_batch_key.append(k)
+                # # visualize(im, k)
 
                 # 15.0 Original + rotate + translate
                 im, k = rotation(image, keypoints)
@@ -205,19 +206,19 @@ def train_generator(sample_per_batch, batch_number):
                 y_batch_key.append(k)
                 # visualize(im, k)
 
-                # 19.0 Original + crop + translate
-                im, k = crop(image, keypoints)
-                im, k = translate(im, k)
-                x_batch.append(im)
-                y_batch_key.append(k)
-                # visualize(im, k)
+                # # 19.0 Original + crop + translate
+                # im, k = crop(image, keypoints)
+                # im, k = translate(im, k)
+                # x_batch.append(im)
+                # y_batch_key.append(k)
+                # # visualize(im, k)
 
-                # 20.0 Flip + crop + translate
-                im, k = crop(im_flip, k_flip)
-                im, k = translate(im, k)
-                x_batch.append(im)
-                y_batch_key.append(k)
-                # visualize(im, k)
+                # # 20.0 Flip + crop + translate
+                # im, k = crop(im_flip, k_flip)
+                # im, k = translate(im, k)
+                # x_batch.append(im)
+                # y_batch_key.append(k)
+                # # visualize(im, k)
 
             x_batch = np.asarray(x_batch)
             x_batch = x_batch.astype('float32')
@@ -277,16 +278,16 @@ def valid_generator(sample_per_batch, batch_number):
                 keypoints = []
                 
                 #adjusting the width labels as per new image dimensions of a square
-                x1 = (labels_data[labels_data["filename"] == filename]["new_finger_x"]) + left
-                y1 = (labels_data[labels_data["filename"] == filename]["new_finger_y"]) + top
-                x2 = (labels_data[labels_data["filename"] == filename]["new_thumb_x"]) + left
-                y2 = (labels_data[labels_data["filename"] == filename]["new_thumb_y"]) + top
+                x1 = (labels_data[labels_data["filename"] == filename]["new_finger_x"]).values[0] + left
+                y1 = (labels_data[labels_data["filename"] == filename]["new_finger_y"]).values[0] + top
+                x2 = (labels_data[labels_data["filename"] == filename]["new_thumb_x"]).values[0] + left
+                y2 = (labels_data[labels_data["filename"] == filename]["new_thumb_y"]).values[0] + top
                 
                 #adjusting labels as per dimension of reduced size for model
-                x1 = (x1*128/(max(old_size)) )
-                y1 = (y1*128/(max(old_size)) )
-                x2 = (x2*128/(max(old_size)) )
-                y2 = (y2*128/(max(old_size)) )
+                x1 = np.float32(x1*128/(max(old_size)) )
+                y1 = np.float32(y1*128/(max(old_size)) )
+                x2 = np.float32(x2*128/(max(old_size)) )
+                y2 = np.float32(y2*128/(max(old_size)) )
 
                 keypoints.append(x1)
                 keypoints.append(y1)
@@ -296,9 +297,10 @@ def valid_generator(sample_per_batch, batch_number):
                 x_batch.append(image)
                 y_batch_key.append(keypoints)
 
-                im_flip, k_flip = flip_horizontal(image, keypoints)
-                x_batch.append(im_flip)
-                y_batch_key.append(k_flip)
+                ## Removing flipping as we have enough data
+                # im_flip, k_flip = flip_horizontal(image, keypoints)
+                # x_batch.append(im_flip)
+                # y_batch_key.append(k_flip)
 
             x_batch = np.asarray(x_batch)
             x_batch = x_batch.astype('float32')
@@ -308,6 +310,8 @@ def valid_generator(sample_per_batch, batch_number):
             y_batch_key = y_batch_key.astype('float32')
             y_batch_key = y_batch_key / 128.
             yield (x_batch, y_batch_key)
+
+
 
 
 if __name__ == '__main__':

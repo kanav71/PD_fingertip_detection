@@ -11,7 +11,11 @@ from yolo.detector import YOLO
 from fingertip import Fingertips
 
 #hand = YOLO('weights/yolo.h5', threshold=0.5)
-fingertip = Fingertips(model='vgg', weights='weights/weights025.h5')
+#fingertip = Fingertips(model='vgg', weights='hypertune_artifacts/best_models/wts_vg16_lr_0.0001_dr_0.5_ly_1024.h5')
+#fingertip = Fingertips(model='inception', weights='hypertune_artifacts/best_models/wts_incp_lr_0.0001_dr_0.75_ly_1024.h5')
+fingertip = Fingertips(model='xception', weights='hypertune_artifacts/best_models/wts_xcp_lr_0.0001_dr_0.5_ly_1024.h5')
+
+
 resolution = 1
 
 
@@ -32,7 +36,9 @@ resolution = 1
 #     return image_aug, keys_aug
 
 
-image_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Valid/' 
+#image_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Test_control_gp/' 
+#image_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Test_patient_gp/' 
+image_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/Test/' 
 label_directory = 'C:/Users/Kanav/Documents/Dissertation/Parkinsons_Disease/Codes/Fingertip-Mixed-Reality/Dataset/label/'
 image_files = os.listdir(image_directory)
 
@@ -49,7 +55,8 @@ labels_data["filename"] = labels_data["video_name"] + "@" + labels_data.seq.str[
 # ego_lines = file.readlines()
 # file.close()
 
-total_error = np.zeros([1, 4])
+total_MSE_error = np.zeros([1, 4])
+total_abs_error = np.zeros([1, 4])
 avg_hand_detect_time = 0
 avg_fingertip_detect_time = 0
 avg_time = 0
@@ -98,12 +105,15 @@ for image_name in image_files:
 
     #resizing image as per model requirements - change this when you try some other size - Kanav        
     image = cv2.resize(image, (128, 128), interpolation=cv2.INTER_LINEAR)
-
+    
     tic3 = time.time()
+    
+    #predicting fingertip coordinates
     position = fingertip.classify(image=image)
     toc3 = time.time()
     avg_fingertip_detect_time = avg_fingertip_detect_time + (toc3 - tic3)
 
+    # adusting predicted coordinates to original size and then further adjusting for padding
     for i in range(0, len(position), 2):
         position[i] = (position[i] * max(old_size)) - left
         position[i + 1] = (position[i + 1] * max(old_size)) - top
@@ -119,26 +129,34 @@ for image_name in image_files:
     gt = np.asarray(gt)
     pr = np.asarray(pr)
     abs_err = abs(gt - pr)
-    total_error = total_error + abs_err
+    sq_err = (gt - pr)**2
+    total_MSE_error = total_MSE_error + sq_err
+    total_abs_error = total_abs_error + abs_err
     #D = np.sqrt((gt[0] - gt[2]) ** 2 + (gt[1] - gt[3]) ** 2)
     #D_hat = np.sqrt((pr[0] - pr[2]) ** 2 + (pr[1] - pr[3]) ** 2)
     #distance_error.append(abs(D - D_hat))
     count = count + 1
     print('Detected Image: {0}'.format(count))
 
-er = total_error / count
+er_MSE = total_MSE_error / count
+er_abs = total_abs_error / count
 #avg_iou = avg_iou / count
-er = er[0]
-er = np.round(er, 4)
+er_MSE = er_MSE[0]
+er_MSE = np.round(er_MSE, 4)
+
+er_abs = er_abs[0]
+er_abs = np.round(er_abs, 4)
 # distance_error = np.array(distance_error)
 # distance_error = np.mean(distance_error)
 # distance_error = np.round(distance_error, 4)
 
 print('Total Detected Image: {0}'.format(count))
 #print('Average IOU: {0}'.format(avg_iou))
-print('Pixel errors: xi = {0}, yi = {1}, xt = {2}, yt = {3}'.format(er[0], er[1],
-                                                                                   er[2], er[3],
-                                                                                   distance_error))
+print('MSE Pixel errors: xi = {0}, yi = {1}, xt = {2}, yt = {3}'.format(er_MSE[0], er_MSE[1],
+                                                                                   er_MSE[2], er_MSE[3]))
+
+print('ABS Pixel errors: xi = {0}, yi = {1}, xt = {2}, yt = {3}'.format(er_abs[0], er_abs[1],er_abs[2], er_abs[3]))
+
 
 # avg_time = avg_time / 1000
 # avg_hand_detect_time = avg_hand_detect_time / count
@@ -148,6 +166,6 @@ avg_fingertip_detect_time = avg_fingertip_detect_time / count
 #print('Average hand detection time: {0:1.5f} ms'.format(avg_hand_detect_time * 1000))
 print('Average fingertip detection time: {0:1.5f} ms'.format(avg_fingertip_detect_time * 1000))
 
-print('{0} & {1} & {2} & {3} '.format(er[0], er[1], er[2], er[3]))
+#print('{0} & {1} & {2} & {3} '.format(er[0], er[1], er[2], er[3]))
 
 
